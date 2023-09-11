@@ -13,7 +13,8 @@ import org.springframework.web.client.RestTemplate;
 import com.devhoss.app.item.models.Item;
 import com.devhoss.app.item.models.Producto;
 
-@Service
+
+@Service("serviceRestTemplate")
 public class ItemServiceImpl implements IItemService {
 
 	@Autowired
@@ -21,14 +22,14 @@ public class ItemServiceImpl implements IItemService {
 
 	@Override
 	public List<Item> findAll() {
-
+		System.out.println("serviceRestTemplate - findAll");
 		List<Producto> productos = Arrays.asList(clienteRest.getForObject("http://localhost:8001/listar", Producto[].class));
 		return productos.stream().map(p -> new Item(p, 1)).collect(Collectors.toList());
 	}
 
 	@Override
 	public Item findById(Long id, Integer cantidad) {
-		
+		System.out.println("serviceRestTemplate - findAll");
 		Map<String, String> pathVariables = new HashMap<String, String>();
 		pathVariables.put("id", id.toString());
 		Producto producto = clienteRest.getForObject("http://localhost:8001/ver/{id}", Producto.class, pathVariables);
