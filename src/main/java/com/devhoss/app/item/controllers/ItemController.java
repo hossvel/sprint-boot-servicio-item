@@ -4,12 +4,15 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.devhoss.app.item.models.Item;
 import com.devhoss.app.item.models.Producto;
@@ -17,6 +20,11 @@ import com.devhoss.app.item.services.IItemService;
 
 @RestController
 public class ItemController {
+	
+	private final Logger logger = LoggerFactory.getLogger(ItemController.class);
+	
+	@Autowired
+	private CircuitBreakerFactory cbFactory;
 	
 	
 	@Autowired
@@ -36,19 +44,21 @@ public class ItemController {
 		return iitemService.findAll();
 	}
 	
+	//@CircuitBreaker(name = "detalle", fallbackMethod = "metodoAlternativo")
 	@GetMapping("/ver/{id}/cantidad/{cantidad}")
-	@CircuitBreaker(name = "detalle", fallbackMethod = "metodoAlternativo")
 	public Item detalle(@PathVariable Long id, @PathVariable Integer cantidad) {
-		return iitemService.findById(id, cantidad);
+		return cbFactory.create("items")
+				.run(()-> iitemService.findById(id, cantidad), e -> metodoAlternativoprogramatico(id, cantidad,e));
 	}
 	
 	
-	public Item metodoAlternativo(Throwable throwable) {
+	public Item metodoAlternativoprogramatico(Long id,  Integer cantidad,Throwable e) {
+		logger.info(e.getMessage());
 		Item item = new Item();
 		Producto producto = new Producto();
 		
-		item.setCantidad(1);
-		producto.setId(1l);
+		item.setCantidad(cantidad);
+		producto.setId(id);
 		producto.setNombre("Producto por defecto");
 		producto.setPrecio(500.00);
 		item.setProducto(producto);
