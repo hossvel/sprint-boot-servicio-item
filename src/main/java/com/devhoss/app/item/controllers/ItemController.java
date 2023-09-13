@@ -18,6 +18,8 @@ import com.devhoss.app.item.models.Item;
 import com.devhoss.app.item.models.Producto;
 import com.devhoss.app.item.services.IItemService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
 @RestController
 public class ItemController {
 	
@@ -59,9 +61,31 @@ public class ItemController {
 		
 		item.setCantidad(cantidad);
 		producto.setId(id);
-		producto.setNombre("Producto por defecto");
+		producto.setNombre("Producto por defecto programatico");
 		producto.setPrecio(500.00);
 		item.setProducto(producto);
 		return item;
 	}
+	
+	
+	@CircuitBreaker(name="items", fallbackMethod = "metodoAlternativoAnotaciones")
+	@GetMapping("/ver2/{id}/cantidad/{cantidad}")
+	public Item detalle2(@PathVariable Long id, @PathVariable Integer cantidad) {
+		return iitemService.findById(id, cantidad);
+	}
+	
+	public Item metodoAlternativoAnotaciones(Long id, Integer cantidad, Throwable e) {
+		logger.info(e.getMessage());
+		Item item = new Item();
+		Producto producto = new Producto();
+		
+		item.setCantidad(cantidad);
+		producto.setId(id);
+		producto.setNombre("Producto por defecto anotaciones");
+		producto.setPrecio(500.00);
+		item.setProducto(producto);
+		return item;
+	}
+	
+	
 }
