@@ -1,6 +1,7 @@
 package com.devhoss.app.item.controllers;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,6 +20,7 @@ import com.devhoss.app.item.models.Producto;
 import com.devhoss.app.item.services.IItemService;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 
 @RestController
 public class ItemController {
@@ -87,5 +89,24 @@ public class ItemController {
 		return item;
 	}
 	
+	@CircuitBreaker(name="items", fallbackMethod = "metodoAlternativoTimeLimiter")
+	@TimeLimiter(name="items", fallbackMethod = "metodoAlternativoTimeLimiter")
+	@GetMapping("/ver3/{id}/cantidad/{cantidad}")
+	public CompletableFuture<Item> detalle3(@PathVariable Long id, @PathVariable Integer cantidad) {
+		return CompletableFuture.supplyAsync(()-> iitemService.findById(id, cantidad));
+	}
+	
+	public CompletableFuture<Item> metodoAlternativoTimeLimiter(Long id, Integer cantidad, Throwable e) {
+		logger.info(e.getMessage());
+		Item item = new Item();
+		Producto producto = new Producto();
+		
+		item.setCantidad(cantidad);
+		producto.setId(id);
+		producto.setNombre("Producto por defecto time limiter");
+		producto.setPrecio(500.00);
+		item.setProducto(producto);
+		return CompletableFuture.supplyAsync(()-> item);
+	}
 	
 }
